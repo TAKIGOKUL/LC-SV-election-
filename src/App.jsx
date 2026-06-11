@@ -331,45 +331,84 @@ export default function App() {
 // ── DASHBOARD ──
 function Dashboard({ candidates, positions, electionDate, electionActive, changeTab, voterCount }) {
   const validCandidates = candidates.filter(c => positions.includes(c.position));
-  const total = voterCount;
-  const top5 = [...validCandidates].sort((a,b) => b.votes - a.votes).slice(0,5);
-  const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
-  const dateStr = electionDate ? new Date(electionDate).toLocaleDateString('en-US',{day:'numeric',month:'long',year:'numeric'}) : '—';
+  const dateStr = electionDate ? new Date(electionDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+  const contestedPositions = positions.filter(p => candidates.filter(c => c.position === p).length > 1);
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <div className="page-title">✨ School Overview ✨</div>
-          <div className="page-subtitle">📅 {dateStr}</div>
+
+      {/* ── Hero Banner ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0f0f1a 0%, #1a0a3a 50%, #0d1a0d 100%)',
+        borderRadius: 32, border: '4px solid #F6C504', boxShadow: '0 8px 0 #F6C504',
+        padding: '36px 28px', marginBottom: 28, textAlign: 'center', position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', top: 16, left: 24, fontSize: 32, opacity: 0.15, animation: 'pulseBouncy 3s infinite' }}>✨</div>
+        <div style={{ position: 'absolute', top: 20, right: 28, fontSize: 24, opacity: 0.15, animation: 'pulseBouncy 2.5s infinite' }}>🌟</div>
+        <div style={{ position: 'absolute', bottom: 16, left: 40, fontSize: 20, opacity: 0.15, animation: 'pulseBouncy 4s infinite' }}>⭐</div>
+        <div style={{ position: 'absolute', bottom: 20, right: 32, fontSize: 28, opacity: 0.15, animation: 'pulseBouncy 3.5s infinite' }}>✨</div>
+        
+        <img src="/logo.png" alt="Serene Valley" style={{ width: 80, height: 80, objectFit: 'contain', marginBottom: 16 }} />
+        
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(246,197,4,0.8)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 6 }}>
+          Serene Valley
         </div>
-        <span className="badge badge-green">
-          <span className={`dot ${electionActive ? 'dot-green' : 'dot-amber'}`} />
-          {electionActive ? 'Active 🟢' : total > 0 ? 'Closed 🔴' : 'Not started 🟡'}
-        </span>
+        <div style={{ fontSize: 28, fontWeight: 900, color: '#FFFFFF', marginBottom: 8, letterSpacing: '-0.5px' }}>
+          L’École Chempaka — Serene Valley
+        </div>
+        <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)', marginBottom: 24, fontWeight: 600 }}>
+          🗳️ Student Leadership Elections · {dateStr}
+        </div>
+        
+        <div style={{ width: 60, height: 3, background: 'linear-gradient(to right, transparent, #F6C504, transparent)', margin: '0 auto 24px', borderRadius: 4 }} />
+        
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, background: electionActive ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.1)', border: `2px solid ${electionActive ? '#22c55e' : '#ef4444'}`, borderRadius: 50, padding: '10px 24px' }}>
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: electionActive ? '#22c55e' : '#ef4444', display: 'inline-block', boxShadow: electionActive ? '0 0 10px #22c55e' : 'none', animation: electionActive ? 'pulseBouncy 1.5s infinite' : 'none' }} />
+          <span style={{ color: electionActive ? '#86efac' : '#fca5a5', fontWeight: 800, fontSize: 15, letterSpacing: '0.02em' }}>
+            {electionActive ? 'Voting is LIVE — Cast your vote now!' : voterCount > 0 ? 'Voting has Closed' : 'Voting has not started yet'}
+          </span>
+        </div>
       </div>
 
-      <div className="stat-strip">
-        <div className="stat-box"><div className="stat-num">👥 {validCandidates.length}</div><div className="stat-label">Candidates</div></div>
-        <div className="stat-box"><div className="stat-num">🏆 {positions.length}</div><div className="stat-label">Positions</div></div>
-        <div className="stat-box"><div className="stat-num">🗳️ {total}</div><div className="stat-label">Votes Cast</div></div>
-      </div>
-
-      <div className="card">
-        <div className="section-header"><span className="section-title">⭐ Leadership Leaderboard ⭐</span></div>
-        {top5.length === 0 && <p className="text-muted" style={{fontSize:15, textAlign: 'center', padding: '20px 0'}}>No votes recorded yet. Let's start voting! 🗳️</p>}
-        {top5.map((c,i) => (
-          <div key={c.id} className="lb-row">
-            <span className="lb-rank">{medals[i]}</span>
-            <Avatar name={c.name} photo={c.photo} />
-            <div className="lb-info">
-              <div className="lb-name">{c.name}</div>
-              <div className="lb-pos">🏅 {c.position}</div>
-            </div>
-            <span className="lb-votes">{c.votes} {c.votes === 1 ? 'vote' : 'votes'}</span>
+      {/* ── Stats Row ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
+        {[
+          { icon: '🏅', num: positions.length, label: 'Open Positions' },
+          { icon: '👥', num: validCandidates.length, label: 'Candidates Running' },
+          { icon: '🗳️', num: voterCount, label: 'Votes Cast' },
+        ].map(({ icon, num, label }) => (
+          <div key={label} style={{ background: '#FFFFFF', border: '3px solid #1D1B1C', borderRadius: 24, boxShadow: '0 6px 0 #1D1B1C', padding: '24px 12px', textAlign: 'center' }}>
+            <div style={{ fontSize: 30 }}>{icon}</div>
+            <div style={{ fontSize: 32, fontWeight: 900, color: '#1D1B1C', lineHeight: 1.1, marginTop: 4 }}>{num}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#5C5759', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
           </div>
         ))}
       </div>
+
+      {/* ── Positions at a Glance ── */}
+      <div style={{ background: '#FFFFFF', border: '3px solid #1D1B1C', borderRadius: 28, boxShadow: '0 6px 0 #1D1B1C', padding: '24px', marginBottom: 28 }}>
+        <div style={{ fontSize: 17, fontWeight: 900, color: '#1D1B1C', marginBottom: 16 }}>🏅 Contested Positions ({contestedPositions.length})</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+          {contestedPositions.map(p => (
+            <div key={p} style={{ background: '#F6C504', border: '2.5px solid #1D1B1C', borderRadius: 50, padding: '8px 18px', fontSize: 12, fontWeight: 800, color: '#1D1B1C', boxShadow: '0 3px 0 #1D1B1C' }}>{p}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Call to Action ── */}
+      {electionActive && (
+        <div style={{ textAlign: 'center', paddingBottom: 16 }}>
+          <button className="btn primary primary-jump-breathe"
+            style={{ fontSize: 22, padding: '20px 48px', borderRadius: 50 }}
+            onClick={() => { playSound.success(); changeTab('vote'); }}
+            onMouseEnter={() => playSound.hover()}>
+            🗳️ Start Voting Now!
+          </button>
+          <div style={{ fontSize: 13, color: '#5C5759', marginTop: 12, fontWeight: 700 }}>
+            Your vote is secret, safe, and counts forever 🔒
+          </div>
+        </div>
+      )}
     </div>
   );
 }
