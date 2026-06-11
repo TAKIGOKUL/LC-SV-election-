@@ -156,6 +156,7 @@ export default function App() {
   const [adminLoggedIn, setAdminLoggedIn] = useState(false);
   const [dbError, setDbError] = useState(false);
   const [facultyCount, setFacultyCount] = useState(0);
+  const [votedAdminNos, setVotedAdminNos] = useState([]);
   const [facultyVoterSession, setFacultyVoterSession] = useState(null);
   const [bgIndex, setBgIndex] = useState(0);
   const [soundOn, setSoundOn] = useState(() => {
@@ -220,8 +221,11 @@ export default function App() {
     if (p) setPositions(p.map(x => x.name));
     const { data: c } = await supabase.from('candidates').select('*');
     if (c) setCandidates(c);
-    const { count: fCount } = await supabase.from('voters').select('*', { count: 'exact', head: true }).eq('grade', 'Faculty');
-    if (fCount !== null) setFacultyCount(fCount);
+    const { data: v } = await supabase.from('voters').select('roll_number, grade');
+    if (v) {
+      setVotedAdminNos(v.map(row => String(row.roll_number)));
+      setFacultyCount(v.filter(row => row.grade === 'Faculty').length);
+    }
     setDbError(false);
   };
 
@@ -314,9 +318,9 @@ export default function App() {
         )}
         {tab === 'dashboard'   && <Dashboard candidates={candidates} positions={positions} electionDate={electionDate} electionActive={electionActive} changeTab={changeTab} voterCount={calculatedVoters} />}
         {tab === 'candidates'  && <Candidates candidates={candidates} positions={positions} />}
-        {tab === 'vote'        && <Vote candidates={candidates} positions={positions} electionActive={electionActive} hasVoted={hasVoted} setHasVoted={setHasVoted} showToast={showToast} fetchData={fetchData} changeTab={changeTab} facultyVoterSession={facultyVoterSession} setFacultyVoterSession={setFacultyVoterSession} />}
+        {tab === 'vote'        && <Vote candidates={candidates} positions={positions} electionActive={electionActive} hasVoted={hasVoted} setHasVoted={setHasVoted} showToast={showToast} fetchData={fetchData} changeTab={changeTab} facultyVoterSession={facultyVoterSession} setFacultyVoterSession={setFacultyVoterSession} votedAdminNos={votedAdminNos} />}
         {tab === 'results'     && <Results candidates={candidates} positions={positions} />}
-        {tab === 'admin'       && <Admin adminLoggedIn={adminLoggedIn} setAdminLoggedIn={setAdminLoggedIn} electionActive={electionActive} electionName={electionName} electionDate={electionDate} positions={positions} candidates={candidates} showToast={showToast} setHasVoted={setHasVoted} fetchData={fetchData} changeTab={changeTab} facultyCount={facultyCount} setFacultyVoterSession={setFacultyVoterSession} />}
+        {tab === 'admin'       && <Admin adminLoggedIn={adminLoggedIn} setAdminLoggedIn={setAdminLoggedIn} electionActive={electionActive} electionName={electionName} electionDate={electionDate} positions={positions} candidates={candidates} showToast={showToast} setHasVoted={setHasVoted} fetchData={fetchData} changeTab={changeTab} facultyCount={facultyCount} setFacultyVoterSession={setFacultyVoterSession} setVotedAdminNos={setVotedAdminNos} />}
       </div>
 
       {toast && <div className="toast">{toast}</div>}
@@ -444,7 +448,7 @@ function Candidates({ candidates, positions }) {
 // Ordered list of grades eligible to vote (Standard IV to X only)
 const VOTING_GRADES = ['IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
 
-function Vote({ candidates, positions, electionActive, hasVoted, setHasVoted, showToast, fetchData, changeTab, facultyVoterSession, setFacultyVoterSession }) {
+function Vote({ candidates, positions, electionActive, hasVoted, setHasVoted, showToast, fetchData, changeTab, facultyVoterSession, setFacultyVoterSession, votedAdminNos }) {
   const [voter, setVoter] = useState(facultyVoterSession || null);
   const [tempGrade, setTempGrade] = useState('');
   const [tempDivision, setTempDivision] = useState('');
@@ -469,7 +473,7 @@ function Vote({ candidates, positions, electionActive, hasVoted, setHasVoted, sh
   const gradeStudents = tempGrade ? studentList.filter(s => s.standard === tempGrade) : [];
   const divisionsInGrade = Array.from(new Set(gradeStudents.map(s => s.division))).filter(Boolean).sort();
   const filteredStudents = tempGrade && tempDivision
-    ? gradeStudents.filter(s => s.division === tempDivision)
+    ? gradeStudents.filter(s => s.division === tempDivision && !votedAdminNos.includes(String(s.adminNo)))
     : gradeStudents;
 
   // Reset division + student when grade changes
@@ -1025,7 +1029,7 @@ function Results({ candidates, positions }) {
 }
 
 // ── ADMIN ──
-function Admin({ adminLoggedIn, setAdminLoggedIn, electionActive, electionName, electionDate, positions, candidates, showToast, setHasVoted, fetchData, changeTab, facultyCount, setFacultyVoterSession }) {
+function Admin({ adminLoggedIn, setAdminLoggedIn, electionActive, electionName, electionDate, positions, candidates, showToast, setHasVoted, fetchData, changeTab, facultyCount, setFacultyVoterSession, setVotedAdminNos }) {
   const [pwd, setPwd] = useState('');
   const [name, setName] = useState(electionName);
   const [date, setDate] = useState(electionDate);
@@ -1135,6 +1139,7 @@ function Admin({ adminLoggedIn, setAdminLoggedIn, electionActive, electionName, 
       
       playSound.success();
       setHasVoted(false);
+      setVotedAdminNos([]); // Instantly restore all student names in voting list
       await fetchData();
       showToast('All votes and voter records have been successfully reset! 🧹');
     } catch (err) {
